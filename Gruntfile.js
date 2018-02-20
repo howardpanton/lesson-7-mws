@@ -13,15 +13,23 @@ module.exports = function(grunt) {
       dev: {
         options: {
           engine: 'im',
-          sizes: [{
-            /*
-            Change these:
-            
-            width: ,
-            suffix: ,
-            quality:
-            */
-          }]
+          sizes: [
+          {
+            name: "small",
+            width: 640,
+            quality: 80,
+          },
+          {
+            name: "medium",
+            width: 1024,
+            quality: 80,
+          },
+          {
+            name: "large",
+            width: 1600,
+            quality: 70,
+          },
+        ]
         },
 
         /*
@@ -31,8 +39,21 @@ module.exports = function(grunt) {
         files: [{
           expand: true,
           src: ['*.{gif,jpg,png}'],
-          cwd: 'images_src/',
-          dest: 'images/'
+          cwd: './src/images_src/',
+          dest: './public/images/'
+        }]
+      }
+    },
+
+    /* Minify CSS file */
+    cssmin: {
+      target: {
+        files: [{
+          expand: true,
+          cwd: './src/css',
+          src: ['*.css', '!*.min.css'],
+          dest: 'public/css',
+          ext: '.min.css'
         }]
       }
     },
@@ -40,7 +61,7 @@ module.exports = function(grunt) {
     /* Clear out the images directory if it exists */
     clean: {
       dev: {
-        src: ['images'],
+        src: ['public/**'],
       },
     },
 
@@ -48,27 +69,79 @@ module.exports = function(grunt) {
     mkdir: {
       dev: {
         options: {
-          create: ['images']
+          create: ['public']
         },
       },
     },
 
-    /* Copy the "fixed" images that don't go through processing into the images/directory */
+
+    /* Gzip html file */
+    gzip: {
+      options: { detail: true},
+      index: {
+        src: [
+          'public/index.html',
+        ]
+      }
+    },
+
+
+    /* Watch CSS files for changes */
+    watch: {
+      css: {
+        files: './src/**/*.css',
+        tasks: ['cssmin'],
+        options: {
+          livereload: true,
+        },
+      },
+      html: {
+        files: './src/*.html',
+        tasks: ['copy:gzip'],
+        options: {
+          livereload: true,
+        },
+      },
+    },
+
+
+    /* Copy the "fixed" images that don't go through processing into the
+    images/directory */
     copy: {
       dev: {
         files: [{
+          cwd: './images_src/fixed',
           expand: true,
-          src: 'images_src/fixed/*.{gif,jpg,png}',
-          dest: 'images/'
+          src: '*.{gif,jpg,png}',
+          dest: 'public/images/'
+        }]
+      },
+      gzip: {
+        files: [{
+          cwd: './src',
+          expand: true,
+          src: 'index.html',
+          dest: 'public/'
         }]
       },
     },
   });
-  
+
+
   grunt.loadNpmTasks('grunt-responsive-images');
+  grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-gzip');
+  grunt.loadNpmTasks('grunt-contrib-cssmin');
   grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-mkdir');
-  grunt.registerTask('default', ['clean', 'mkdir', 'copy', 'responsive_images']);
-
+  grunt.registerTask('default', [
+    'clean',
+    'mkdir',
+    'copy',
+    'responsive_images',
+    'cssmin',
+    'gzip',
+    'watch',
+  ]);
 };
